@@ -1,0 +1,10 @@
+# node
+node_modules
+package-lock.json
+
+# build
+dist
+
+# phi/volumes
+*.dcm
+*.nrrd
