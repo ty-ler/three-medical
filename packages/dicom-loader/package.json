@@ -1,5 +1,17 @@
 {
   "name": "@three-medical/dicom-loader",
-  "version": "0.0.1",
-  "type": "commonjs"
+  "author": "Tyler Smith",
+  "description": "(WIP) three.js DICOM Loader",
+  "homepage": "https://github.com/ty-ler/three-medical/tree/master/packages/dicom-loader",
+  "version": "0.0.2",
+  "type": "commonjs",
+  "license": "MIT",
+  "keywords": [
+    "DICOM",
+    "dicom",
+    "three",
+    "three.js",
+    "loader",
+    "NRRD"
+  ]
 }
