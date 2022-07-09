@@ -3,6 +3,12 @@ import { Volume } from './common/volume';
 import { Image as ITKImage, readImageDICOMArrayBufferSeries } from 'itk-wasm';
 
 export class DicomLoader {
+  /**
+   * Load a DICOM image series.
+   *
+   * @param urls list of DICOM blob urls
+   * @returns three.js Volume
+   */
   public async loadImageSeries(urls: string[]) {
     const buffers = await Promise.all(
       urls.map((url) => this.loadImageBuffer(url))
@@ -13,6 +19,12 @@ export class DicomLoader {
     return volume;
   }
 
+  /**
+   * Load a single DICOM image.
+   *
+   * @param url DICOM blob url
+   * @returns three.js Volume
+   */
   public async loadImage(url: string) {
     const buffer = await this.loadImageBuffer(url);
     const image = await this.prepareImage([buffer]);

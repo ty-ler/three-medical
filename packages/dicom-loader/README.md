@@ -1,11 +1,49 @@
 # dicom-loader
 
-This library was generated with [Nx](https://nx.dev).
+three.js DICOM loader
 
-## Building
+**NOTE:** This package is a work in progress and should not be used in production.
 
-Run `nx build dicom-loader` to build the library.
+# Usage
 
-## Running unit tests
+## Install
 
-Run `nx test dicom-loader` to execute the unit tests via [Jest](https://jestjs.io).
+```
+npm install @three-medical/dicom-loader
+```
+
+## loadImageSeries
+
+Load a DICOM image series.
+
+```typescript
+// A list of DICOM image blob urls
+const urls = [...];
+
+const loader = new DicomLoader();
+const volume = await loader.loadImageSeries(urls);
+```
+
+## loadImage
+
+Load a single DICOM image.
+
+```typescript
+// A  DICOM image blob url
+const url = [...];
+
+const loader = new DicomLoader();
+const volume = await loader.loadImage(url);
+```
+
+# Acknowledgments
+
+### three.js
+
+- [NRRDLoader example](https://github.com/mrdoob/three.js/blob/master/examples/jsm/loaders/NRRDLoader.js)
+- [Volume](https://github.com/mrdoob/three.js/blob/master/examples/jsm/misc/Volume.js)
+- [VolumeSlice](https://github.com/mrdoob/three.js/blob/master/examples/jsm/misc/VolumeSlice.js)
+
+### Other
+
+- [itk-wasm](https://github.com/InsightSoftwareConsortium/itk-wasm)
