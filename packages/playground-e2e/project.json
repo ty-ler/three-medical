@@ -1,5 +1,5 @@
 {
-  "root": "packages/playground-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/playground-e2e/src",
   "projectType": "application",
   "targets": {

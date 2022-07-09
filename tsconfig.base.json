@@ -15,7 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@three-medical/lib": ["packages/lib/src/index.ts"]
+      "@three-medical/viewer": ["packages/viewer/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

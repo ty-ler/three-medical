@@ -1,5 +1,5 @@
 {
-  "root": "packages/playground",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/playground/src",
   "projectType": "application",
   "tags": [],
@@ -53,11 +53,9 @@
       }
     },
     "test": {
-      "executor": "@nrwl/jest:jest",
-      "outputs": ["coverage/packages/playground"],
+      "executor": "@nxext/vitest:vitest",
       "options": {
-        "jestConfig": "packages/playground/jest.config.js",
-        "passWithNoTests": true
+        "command": "run"
       }
     }
   }

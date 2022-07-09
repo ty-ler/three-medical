@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [],
   test: {
-    global: true,
+    globals: true,
     environment: 'jsdom',
   },
 });
