@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@three-medical/viewer": ["packages/viewer/src/index.ts"]
+      "@three-medical/viewer": ["packages/viewer/src/index.ts"],
+      "@three-medical/dicom-loader": ["packages/dicom-loader/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

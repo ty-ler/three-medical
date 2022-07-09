@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fetchDicomUrls } from './helpers/fetch-dicom';
-  import { DicomLoader, TrackballControls } from '@three-medical/viewer';
+  import { TrackballControls } from '@three-medical/viewer';
+  import DicomLoader from '@three-medical/dicom-loader';
   import {
     PerspectiveCamera,
     Scene,
@@ -12,6 +13,7 @@
     MeshBasicMaterial,
     Mesh,
     BoxHelper,
+    Color,
   } from 'three';
 
   let container: HTMLDivElement;
@@ -20,7 +22,7 @@
     const urls = await fetchDicomUrls('http://localhost:1337/pelvis');
 
     const loader = new DicomLoader();
-    const volume = await loader.loadSeries(urls);
+    const volume = await loader.loadImageSeries(urls);
 
     const camera = new PerspectiveCamera(
       60,
@@ -45,6 +47,8 @@
     const renderer = new WebGLRenderer();
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(container.clientWidth, container.clientHeight);
+
+    renderer.setClearColor(0x333333);
 
     container.appendChild(renderer.domElement);
 
@@ -81,9 +85,11 @@
       'x',
       Math.floor((volume as any).RASDimensions[0] / 2)
     );
+
     scene.add(sliceX.mesh);
 
     console.log(sliceX);
+    console.log((sliceX as any).index);
 
     const controls = new TrackballControls(camera, renderer.domElement);
     controls.minDistance = 100;
