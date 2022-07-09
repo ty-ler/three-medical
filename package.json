@@ -1,5 +1,6 @@
 {
   "name": "three-medical",
+<<<<<<< HEAD
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -17,5 +18,50 @@
   "devDependencies": {
     "@types/three": "^0.134.0",
     "typescript": "^4.5.2"
+=======
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "serve-dicom": "http-server dicom"
+  },
+  "private": true,
+  "devDependencies": {
+    "@nrwl/cli": "14.4.2",
+    "@nrwl/cypress": "14.4.2",
+    "@nrwl/jest": "14.4.2",
+    "@nrwl/js": "14.4.2",
+    "@nrwl/linter": "14.4.2",
+    "@nrwl/workspace": "14.4.2",
+    "@nxext/svelte": "^14.0.0",
+    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.41",
+    "@testing-library/svelte": "^3.1.1",
+    "@tsconfig/svelte": "^3.0.0",
+    "@types/jest": "27.4.1",
+    "@types/node": "16.11.7",
+    "c8": "^7.11.0",
+    "cypress": "^9.1.0",
+    "eslint-plugin-cypress": "^2.10.3",
+    "eslint-plugin-svelte3": "^3.4.1",
+    "http-server": "^14.1.1",
+    "jest": "27.5.1",
+    "nx": "14.4.2",
+    "prettier": "^2.6.2",
+    "svelte": "^3.49.0",
+    "svelte-check": "^2.7.0",
+    "svelte-jester": "^2.3.2",
+    "svelte-preprocess": "^4.10.6",
+    "ts-jest": "27.1.4",
+    "ts-node": "~10.8.0",
+    "typescript": "~4.7.2",
+    "vitest": "^0.9.3"
+  },
+  "dependencies": {
+    "@types/three": "^0.141.0",
+    "dicom-parser": "^1.8.13",
+    "itk": "^14.1.1",
+    "itk-wasm": "^1.0.0-b.18",
+    "three": "^0.142.0",
+    "tslib": "^2.3.0"
+>>>>>>> refactor
   }
 }
