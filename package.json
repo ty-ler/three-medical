@@ -2,9 +2,7 @@
   "name": "three-medical",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {
-    "serve-dicom": "http-server dicom"
-  },
+  "scripts": {},
   "private": true,
   "devDependencies": {
     "@nrwl/cli": "14.4.2",
