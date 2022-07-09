@@ -47,3 +47,7 @@ const volume = await loader.loadImage(url);
 ### Other
 
 - [itk-wasm](https://github.com/InsightSoftwareConsortium/itk-wasm)
+
+# Source
+
+### [@three-medical/dicom-loader](https://github.com/ty-ler/three-medical/tree/master/packages/dicom-loader)
