@@ -22,6 +22,7 @@
   import { Orientation } from 'packages/viewer/src/lib/common/orientation';
   import type { VolumeSlice } from 'packages/dicom-loader/src/lib/common/volume-slice';
   import type { Volume } from 'packages/dicom-loader/src/lib/common/volume';
+  import { inflate } from 'pako';
 
   let container: HTMLDivElement;
   let viewport: Viewport;
@@ -39,16 +40,29 @@
   };
 
   onMount(async () => {
-    const urls = await fetchDicomUrls('http://localhost:1337/pelvis');
+    const urls = await fetchDicomUrls(
+      'http://localhost:1337/prostate/compressed'
+    );
 
     const loader = new DicomLoader();
     volume = await loader.loadImageSeries(urls, (buffer) => {
-      return buffer;
+      const uint8 = new Uint8Array(buffer);
+      const decompressed = inflate(uint8);
+
+      return decompressed.buffer;
     });
 
-    const camera = new MPROrthographicCamera(Orientation.SAGITTAL);
+    // const camera = new PerspectiveCamera(
+    //   60,
+    //   container.clientWidth / container.clientHeight,
+    //   0.01,
+    //   1e10
+    // );
+    // camera.position.z = 1000;
 
+    const camera = new MPROrthographicCamera(Orientation.CORONAL);
     camera.updateValuesForContainerElement(container);
+
     viewport = new Viewport();
     viewport.setContainerElement(container);
     viewport.setCamera(camera);
@@ -65,9 +79,9 @@
 
     //box helper to see the extend of the volume
     const geometry = new BoxGeometry(
-      volume.xLength,
-      volume.yLength,
-      volume.zLength
+      volume.xLength * volume.spacing[0],
+      volume.yLength * volume.spacing[1],
+      volume.zLength * volume.spacing[2]
     );
     const material = new MeshBasicMaterial({ color: 0x00ff00 });
     const cube = new Mesh(geometry, material);
