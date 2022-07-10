@@ -83,6 +83,8 @@ export class DicomLoader {
       image.data
     ) as any;
 
+    volume.spacing = [...image.spacing];
+
     const minMax = volume.computeMinMax();
 
     volume.windowLow = minMax[0];
@@ -93,11 +95,6 @@ export class DicomLoader {
     volume.inverseMatrix = new Matrix4();
     volume.inverseMatrix.copy(volume.matrix).invert();
 
-    const transitionMatrix = new Matrix4();
-
-    // LPS
-    transitionMatrix.set(-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-
     volume.RASDimensions = new Vector3(
       volume.xLength,
       volume.yLength,
@@ -107,6 +104,14 @@ export class DicomLoader {
       .round()
       .toArray()
       .map(Math.abs);
+
+    if (volume.lowerThreshold === -Infinity) {
+      volume.lowerThreshold = minMax[0];
+    }
+
+    if (volume.upperThreshold === Infinity) {
+      volume.upperThreshold = minMax[1];
+    }
 
     return volume as Volume;
   }
