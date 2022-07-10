@@ -48,12 +48,12 @@ import pako from 'pako';
 // A list of URLs pointing to .dcm.gz files (NOTE: files are compressed)
 const urls = [...];
 
-const processBufferCallback = async (buffer: ArrayBuffer) => {
+const processBufferCallback = (buffer: ArrayBuffer) => {
 	// First we'll turn the buffer into a Uint8Array to make pako.inflate happy
 	const uint8 = new Uint8Array(buffer);
 
 	// Use pako to decompress the buffer
-	const decompressed = await pako.inflate(uint8);
+	const decompressed = pako.inflate(uint8);
 
 	// Finally, return the buffer from the decompressed Uint8Array
 	return decompressed.buffer;
