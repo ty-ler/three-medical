@@ -42,7 +42,9 @@
     const urls = await fetchDicomUrls('http://localhost:1337/pelvis');
 
     const loader = new DicomLoader();
-    volume = await loader.loadImageSeries(urls);
+    volume = await loader.loadImageSeries(urls, (buffer) => {
+      return buffer;
+    });
 
     const camera = new MPROrthographicCamera(Orientation.SAGITTAL);
 

@@ -7,11 +7,16 @@ export class DicomLoader {
    * Load a DICOM image series.
    *
    * @param urls list of DICOM blob urls
+   * @param processBufferCallback (optional) callback used to process the buffer
+   * before converting to a volume.
    * @returns three.js Volume
    */
-  public async loadImageSeries(urls: string[]) {
+  public async loadImageSeries(
+    urls: string[],
+    processBufferCallback?: (buffer: ArrayBuffer) => ArrayBuffer
+  ) {
     const buffers = await Promise.all(
-      urls.map((url) => this.loadImageBuffer(url))
+      urls.map((url) => this.loadImageBuffer(url, processBufferCallback))
     );
     const image = await this.prepareImage(buffers);
     const volume = this.prepareVolume(image);
@@ -23,19 +28,36 @@ export class DicomLoader {
    * Load a single DICOM image.
    *
    * @param url DICOM blob url
+   * @param processBufferCallback (optional) callback used to process the buffer
+   * before converting to a volume.
    * @returns three.js Volume
    */
-  public async loadImage(url: string) {
-    const buffer = await this.loadImageBuffer(url);
+  public async loadImage(
+    url: string,
+    processBufferCallback?: (buffer: ArrayBuffer) => ArrayBuffer
+  ) {
+    const buffer = await this.loadImageBuffer(url, processBufferCallback);
     const image = await this.prepareImage([buffer]);
     const volume = this.prepareVolume(image);
 
     return volume;
   }
 
-  private async loadImageBuffer(url: string) {
+  private async loadImageBuffer(
+    url: string,
+    processBufferCallback?: (buffer: ArrayBuffer) => ArrayBuffer
+  ) {
     const res = await fetch(url);
-    const buffer = await res.arrayBuffer();
+    let buffer = await res.arrayBuffer();
+
+    if (processBufferCallback) {
+      buffer = processBufferCallback(buffer);
+      if (!(buffer instanceof ArrayBuffer)) {
+        throw new Error(
+          'Must return ArrayBuffer instance from processBufferCallback'
+        );
+      }
+    }
 
     return buffer;
   }
