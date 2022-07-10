@@ -17,7 +17,7 @@ npm install @three-medical/dicom-loader
 Load a DICOM image series.
 
 ```typescript
-// A list of DICOM image blob urls
+// A list of URLs pointing to .dcm files
 const urls = [...];
 
 const loader = new DicomLoader();
@@ -29,11 +29,38 @@ const volume = await loader.loadImageSeries(urls);
 Load a single DICOM image.
 
 ```typescript
-// A  DICOM image blob url
+// A URL pointing to a .dcm file
 const url = [...];
 
 const loader = new DicomLoader();
 const volume = await loader.loadImage(url);
+```
+
+## processBufferCallback (method parameter)
+
+Optional parameter for the `loadImageSeries` and `loadImage` methods.
+
+A callback used to process the buffer received from the URL. For example, this can be useful if the buffer received is compressed.
+
+```typescript
+import pako from 'pako';
+
+// A list of URLs pointing to .dcm.gz files (NOTE: files are compressed)
+const urls = [...];
+
+const processBufferCallback = async (buffer: ArrayBuffer) => {
+	// First we'll turn the buffer into a Uint8Array to make pako.inflate happy
+	const uint8 = new Uint8Array(buffer);
+
+	// Use pako to decompress the buffer
+	const decompressed = await pako.inflate(uint8);
+
+	// Finally, return the buffer from the decompressed Uint8Array
+	return decompressed.buffer;
+};
+
+const loader = new DicomLoader();
+const volume = await loader.loadImageSeries(urls, processBufferCallback);
 ```
 
 # Acknowledgments
