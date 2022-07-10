@@ -13,7 +13,9 @@ export class DicomLoader {
    */
   public async loadImageSeries(
     urls: string[],
-    processBufferCallback?: (buffer: ArrayBuffer) => ArrayBuffer
+    processBufferCallback?: (
+      buffer: ArrayBuffer
+    ) => ArrayBuffer | Promise<ArrayBuffer>
   ) {
     const buffers = await Promise.all(
       urls.map((url) => this.loadImageBuffer(url, processBufferCallback))
@@ -34,7 +36,9 @@ export class DicomLoader {
    */
   public async loadImage(
     url: string,
-    processBufferCallback?: (buffer: ArrayBuffer) => ArrayBuffer
+    processBufferCallback?: (
+      buffer: ArrayBuffer
+    ) => ArrayBuffer | Promise<ArrayBuffer>
   ) {
     const buffer = await this.loadImageBuffer(url, processBufferCallback);
     const image = await this.prepareImage([buffer]);
@@ -45,13 +49,15 @@ export class DicomLoader {
 
   private async loadImageBuffer(
     url: string,
-    processBufferCallback?: (buffer: ArrayBuffer) => ArrayBuffer
+    processBufferCallback?: (
+      buffer: ArrayBuffer
+    ) => ArrayBuffer | Promise<ArrayBuffer>
   ) {
     const res = await fetch(url);
     let buffer = await res.arrayBuffer();
 
     if (processBufferCallback) {
-      buffer = processBufferCallback(buffer);
+      buffer = await processBufferCallback(buffer);
       if (!(buffer instanceof ArrayBuffer)) {
         throw new Error(
           'Must return ArrayBuffer instance from processBufferCallback'
