@@ -2,10 +2,11 @@
   import { onDestroy, onMount } from 'svelte';
   import { fetchDicomUrls } from './helpers/fetch-dicom';
   import {
-    TrackballControls,
-    Viewport,
     MPROrthographicCamera,
-  } from '@three-medical/viewer';
+    Orientation,
+    RenderLoop,
+    setRendererContainerElement,
+  } from '@three-medical/core';
   import DicomLoader from '@three-medical/dicom-loader';
   import {
     PerspectiveCamera,
@@ -19,18 +20,26 @@
     BoxHelper,
     Color,
   } from 'three';
-  import { Orientation } from 'packages/viewer/src/lib/common/orientation';
   import type { VolumeSlice } from 'packages/dicom-loader/src/lib/common/volume-slice';
   import type { Volume } from 'packages/dicom-loader/src/lib/common/volume';
   import { inflate } from 'pako';
 
   let container: HTMLDivElement;
-  let viewport: Viewport;
+  // let viewport: Viewport;
+  let renderer: WebGLRenderer = new WebGLRenderer({
+    antialias: true,
+  });
+  let renderLoop: RenderLoop;
 
   let volume: Volume;
   let sliceX: VolumeSlice;
   let sliceY: VolumeSlice;
   let sliceZ: VolumeSlice;
+
+  const setupRenderer = () => {
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x333333);
+  };
 
   const handleChangeSliceSlider = (e: Event, slice: VolumeSlice) => {
     const inputElement = e.target as HTMLInputElement;
@@ -40,6 +49,8 @@
   };
 
   onMount(async () => {
+    setupRenderer();
+
     const urls = await fetchDicomUrls(
       'http://localhost:1337/prostate/compressed'
     );
@@ -60,22 +71,18 @@
     // );
     // camera.position.z = 1000;
 
-    const camera = new MPROrthographicCamera(Orientation.CORONAL);
+    const camera = new MPROrthographicCamera(Orientation.AXIAL);
     camera.updateValuesForContainerElement(container);
 
-    viewport = new Viewport();
-    viewport.setContainerElement(container);
-    viewport.setCamera(camera);
+    const scene = new Scene();
 
-    const scene = viewport.getScene();
+    // // light
+    // const hemiLight = new HemisphereLight(0xffffff, 0x000000, 1);
+    // scene.add(hemiLight);
 
-    // light
-    const hemiLight = new HemisphereLight(0xffffff, 0x000000, 1);
-    viewport.addLight(hemiLight);
-
-    const dirLight = new DirectionalLight(0xffffff, 0.5);
-    dirLight.position.set(200, 200, 200);
-    viewport.addLight(dirLight);
+    // const dirLight = new DirectionalLight(0xffffff, 0.5);
+    // dirLight.position.set(200, 200, 200);
+    // scene.add(dirLight);
 
     //box helper to see the extend of the volume
     const geometry = new BoxGeometry(
@@ -89,32 +96,30 @@
     const box = new BoxHelper(cube);
     scene.add(box);
     box.applyMatrix4((volume as any).matrix);
-    viewport.addMesh(cube);
+    scene.add(cube);
 
     //z plane
     sliceZ = volume.extractSlice(
       'z',
       Math.floor((volume as any).RASDimensions[2] / 4)
     );
-    viewport.addMesh(sliceZ.mesh);
+    scene.add(sliceZ.mesh);
 
     //y plane
     sliceY = volume.extractSlice(
       'y',
       Math.floor((volume as any).RASDimensions[1] / 2)
     );
-    viewport.addMesh(sliceY.mesh);
+    scene.add(sliceY.mesh);
 
     //x plane
     sliceX = volume.extractSlice(
       'x',
       Math.floor((volume as any).RASDimensions[0] / 2)
     );
-    viewport.addMesh(sliceX.mesh);
+    scene.add(sliceX.mesh);
 
-    // camera.setTarget(sliceZ.mesh);
-
-    const renderer = viewport.getRenderer();
+    // const renderer = viewport.getRenderer();
     // const controls = new TrackballControls(camera, renderer.domElement);
     // controls.minDistance = 100;
     // controls.maxDistance = 5000;
@@ -123,27 +128,35 @@
     // controls.panSpeed = 2;
     // controls.noRotate = true;
 
-    viewport.setRenderCallback(() => {
-      // controls.update();
-      // camera.position.z += 0.01;
-      // camera.rotation.x += 0.01;
-      // camera.rotateX(0.01);
-      // camera.rotateZ(Orientation.AXIAL.rotation);
-      // camera.rotateX(0.01);
+    setRendererContainerElement(renderer, container);
+
+    renderLoop = new RenderLoop({
+      renderer,
+      scene,
+      camera,
+      renderCallback: () => {
+        // controls.update();
+        // camera.position.z += 0.01;
+        // camera.rotation.x += 0.01;
+        // camera.rotateX(0.01);
+        // camera.rotateZ(Orientation.AXIAL.rotation);
+        // camera.rotateX(0.01);
+      },
     });
 
-    viewport.startRenderLoop();
+    renderLoop.start();
   });
 
   onDestroy(() => {
-    viewport.cancelRenderLoop();
+    // viewport.cancelRenderLoop();
+    renderLoop.stop();
   });
 </script>
 
 <div style="display: flex; gap: 1rem;">
   <div
     bind:this={container}
-    style="width: 500px; height: 500px; background: rgb(51, 51, 51);"
+    style="width: 800px; height: 800px; background: teal;"
   />
 
   {#if volume}

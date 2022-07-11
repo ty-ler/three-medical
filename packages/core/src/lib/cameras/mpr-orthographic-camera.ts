@@ -1,13 +1,12 @@
-import { Object3D, OrthographicCamera, Vector3 } from 'three';
-import { OrientationDefinition } from '../common/orientation';
+import { Object3D, OrthographicCamera } from 'three';
+import { Orientation } from '../common/orientation';
 
 export class MPROrthographicCamera extends OrthographicCamera {
   private target?: Object3D;
 
-  constructor(private orientation: OrientationDefinition) {
+  constructor(private orientation: Orientation) {
     super();
 
-    // this.up.copy(this.orientation.up);
     this.orientCamera();
   }
 
@@ -38,16 +37,15 @@ export class MPROrthographicCamera extends OrthographicCamera {
   }
 
   private orientCamera() {
-    const { name } = this.orientation;
-    switch (name) {
-      case 'axial':
+    switch (this.orientation) {
+      case Orientation.AXIAL:
         this.rotateX(Math.PI);
         break;
-      case 'sagittal':
+      case Orientation.SAGITTAL:
         this.rotateY(Math.PI * 0.5);
         this.rotateZ(Math.PI * 0.5);
         break;
-      case 'coronal':
+      case Orientation.CORONAL:
         this.rotateX(Math.PI * 0.5);
         break;
     }

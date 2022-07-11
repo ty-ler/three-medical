@@ -2,9 +2,9 @@
   "$schema": "./node_modules/nx/schemas/workspace-schema.json",
   "version": 2,
   "projects": {
-    "playground": "packages/playground",
-    "playground-e2e": "packages/playground-e2e",
+    "core": "packages/core",
     "dicom-loader": "packages/dicom-loader",
-    "viewer": "packages/viewer"
+    "playground": "packages/playground",
+    "playground-e2e": "packages/playground-e2e"
   }
 }
