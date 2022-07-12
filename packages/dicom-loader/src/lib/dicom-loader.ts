@@ -1,5 +1,5 @@
 import { Matrix4, Vector3 } from 'three';
-import { Volume } from './common/volume';
+import { Volume } from '@three-medical/core';
 import { Image as ITKImage, readImageDICOMArrayBufferSeries } from 'itk-wasm';
 
 export class DicomLoader {

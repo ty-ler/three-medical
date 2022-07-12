@@ -1,5 +1,5 @@
 import { Matrix3, Matrix4, Vector3 } from 'three';
-import { VolumeSlice } from './volume-slice';
+import { VolumeSlice, VolumeSliceAxis } from './volume-slice';
 
 /**
  * This class had been written to handle the output of the NRRD loader.
@@ -13,8 +13,34 @@ import { VolumeSlice } from './volume-slice';
  * @param   {string}        type            The type of data (uint8, uint16, ...)
  * @param   {ArrayBuffer}   arrayBuffer     The buffer with volume data
  */
-class Volume {
-  constructor(xLength, yLength, zLength, type, arrayBuffer) {
+export class Volume {
+  public xLength: number = 0;
+  public yLength: number = 0;
+  public zLength: number = 0;
+  public axisOrder: string[] = [];
+  public data: any;
+  public spacing: number[];
+  public offset: number[];
+  public matrix: Matrix3;
+  public inverseMatrix: Matrix4 = new Matrix4();
+  public sliceList: VolumeSlice[];
+  public RASDimensions: number[] = [0, 0, 0];
+  public min: number = 0;
+  public max: number = 0;
+  public upperThreshold?: number;
+  public lowerThreshold?: number;
+  public windowLow?: number;
+  public windowHigh?: number;
+  public dataType?: string;
+  public colorMap: number[] = [];
+
+  constructor(
+    xLength: number,
+    yLength: number,
+    zLength: number,
+    type: string,
+    arrayBuffer: ArrayBuffer
+  ) {
     if (xLength !== undefined) {
       /**
        * @member {number} xLength Width of the volume in the IJK coordinate system
@@ -145,7 +171,7 @@ class Volume {
       },
       set: function (value) {
         lowerThreshold = value;
-        this.sliceList.forEach(function (slice) {
+        this.sliceList.forEach(function (slice: VolumeSlice) {
           slice.geometryNeedsUpdate = true;
         });
       },
@@ -161,7 +187,7 @@ class Volume {
       },
       set: function (value) {
         upperThreshold = value;
-        this.sliceList.forEach(function (slice) {
+        this.sliceList.forEach(function (slice: VolumeSlice) {
           slice.geometryNeedsUpdate = true;
         });
       },
@@ -185,7 +211,7 @@ class Volume {
    * @param {number} k    Third coordinate
    * @returns {number}  value in the data array
    */
-  getData(i, j, k) {
+  getData(i: number, j: number, k: number) {
     return this.data[k * this.xLength * this.yLength + j * this.xLength + i];
   }
 
@@ -197,7 +223,7 @@ class Volume {
    * @param {number} k    Third coordinate
    * @returns {number}  index
    */
-  access(i, j, k) {
+  access(i: number, j: number, k: number) {
     return k * this.xLength * this.yLength + j * this.xLength + i;
   }
 
@@ -207,7 +233,7 @@ class Volume {
    * @param {number} index index of the voxel
    * @returns {Array}  [x,y,z]
    */
-  reverseAccess(index) {
+  reverseAccess(index: number) {
     const z = Math.floor(index / (this.yLength * this.xLength));
     const y = Math.floor(
       (index - z * this.yLength * this.xLength) / this.xLength
@@ -226,7 +252,7 @@ class Volume {
    * @param {Object}   context    You can specify a context in which call the function, default if this Volume
    * @returns {Volume}   this
    */
-  map(functionToMap, context) {
+  map(functionToMap: Function, context: any) {
     const length = this.data.length;
     context = context || this;
 
@@ -244,14 +270,13 @@ class Volume {
    * @param {number}            index the index of the slice
    * @returns {Object} an object containing all the usefull information on the geometry of the slice
    */
-  extractPerpendicularPlane(axis, RASIndex) {
-    let firstSpacing, secondSpacing, positionOffset, IJKIndex;
+  extractPerpendicularPlane(axis: VolumeSliceAxis, RASIndex: number) {
+    let firstSpacing, secondSpacing, positionOffset, IJKIndex: Vector3;
 
     const axisInIJK = new Vector3(),
       firstDirection = new Vector3(),
       secondDirection = new Vector3(),
-      planeMatrix = new Matrix4().identity(),
-      volume = this;
+      planeMatrix = new Matrix4().identity();
 
     const dimensions = new Vector3(this.xLength, this.yLength, this.zLength);
 
@@ -265,7 +290,7 @@ class Volume {
         IJKIndex = new Vector3(RASIndex, 0, 0);
 
         planeMatrix.multiply(new Matrix4().makeRotationY(Math.PI / 2));
-        positionOffset = (volume.RASDimensions[0] - 1) / 2;
+        positionOffset = (this.RASDimensions[0] - 1) / 2;
         planeMatrix.setPosition(new Vector3(RASIndex - positionOffset, 0, 0));
         break;
       case 'y':
@@ -277,7 +302,7 @@ class Volume {
         IJKIndex = new Vector3(0, RASIndex, 0);
 
         planeMatrix.multiply(new Matrix4().makeRotationX(-Math.PI / 2));
-        positionOffset = (volume.RASDimensions[1] - 1) / 2;
+        positionOffset = (this.RASDimensions[1] - 1) / 2;
         planeMatrix.setPosition(new Vector3(0, RASIndex - positionOffset, 0));
         break;
       case 'z':
@@ -289,23 +314,23 @@ class Volume {
         secondSpacing = this.spacing[this.axisOrder.indexOf('y')];
         IJKIndex = new Vector3(0, 0, RASIndex);
 
-        positionOffset = (volume.RASDimensions[2] - 1) / 2;
+        positionOffset = (this.RASDimensions[2] - 1) / 2;
         planeMatrix.setPosition(new Vector3(0, 0, RASIndex - positionOffset));
         break;
     }
 
-    firstDirection.applyMatrix4(volume.inverseMatrix).normalize();
-    firstDirection.arglet = 'i';
-    secondDirection.applyMatrix4(volume.inverseMatrix).normalize();
-    secondDirection.arglet = 'j';
-    axisInIJK.applyMatrix4(volume.inverseMatrix).normalize();
+    firstDirection.applyMatrix4(this.inverseMatrix).normalize();
+    (firstDirection as any).arglet = 'i';
+    secondDirection.applyMatrix4(this.inverseMatrix).normalize();
+    (secondDirection as any).arglet = 'j';
+    axisInIJK.applyMatrix4(this.inverseMatrix).normalize();
     const iLength = Math.floor(Math.abs(firstDirection.dot(dimensions)));
     const jLength = Math.floor(Math.abs(secondDirection.dot(dimensions)));
     const planeWidth = Math.abs(iLength * firstSpacing);
     const planeHeight = Math.abs(jLength * secondSpacing);
 
-    IJKIndex = Math.abs(
-      Math.round(IJKIndex.applyMatrix4(volume.inverseMatrix).dot(axisInIJK))
+    (IJKIndex as any) = Math.abs(
+      Math.round(IJKIndex.applyMatrix4(this.inverseMatrix).dot(axisInIJK))
     );
     const base = [
       new Vector3(1, 0, 0),
@@ -328,25 +353,47 @@ class Volume {
       }
     );
 
-    function sliceAccess(i, j) {
+    const sliceAccess = (i: number, j: number) => {
       const si =
-        iDirection === axisInIJK ? IJKIndex : iDirection.arglet === 'i' ? i : j;
+        iDirection === axisInIJK
+          ? IJKIndex
+          : (iDirection as any).arglet === 'i'
+          ? i
+          : j;
       const sj =
-        jDirection === axisInIJK ? IJKIndex : jDirection.arglet === 'i' ? i : j;
+        jDirection === axisInIJK
+          ? IJKIndex
+          : (jDirection as any).arglet === 'i'
+          ? i
+          : j;
       const sk =
-        kDirection === axisInIJK ? IJKIndex : kDirection.arglet === 'i' ? i : j;
+        kDirection === axisInIJK
+          ? IJKIndex
+          : (kDirection as any).arglet === 'i'
+          ? i
+          : j;
 
       // invert indices if necessary
 
       const accessI =
-        iDirection.dot(base[0]) > 0 ? si : volume.xLength - 1 - si;
+        (iDirection as any).dot(base[0]) > 0
+          ? si
+          : this.xLength - 1 - (si as any);
       const accessJ =
-        jDirection.dot(base[1]) > 0 ? sj : volume.yLength - 1 - sj;
+        (jDirection as any).dot(base[1]) > 0
+          ? sj
+          : this.yLength - 1 - (sj as any);
       const accessK =
-        kDirection.dot(base[2]) > 0 ? sk : volume.zLength - 1 - sk;
+        (kDirection as any).dot(base[2]) > 0
+          ? sk
+          : this.zLength - 1 - (sk as any);
 
-      return volume.access(accessI, accessJ, accessK);
-    }
+      return this.access(
+        accessI as number,
+        accessJ as number,
+        accessK as number
+      );
+    };
 
     return {
       iLength: iLength,
@@ -366,7 +413,7 @@ class Volume {
    * @param {number}            index the index of the slice
    * @returns {VolumeSlice} the extracted slice
    */
-  extractSlice(axis, index) {
+  extractSlice(axis: VolumeSliceAxis, index: number) {
     const slice = new VolumeSlice(this, index, axis);
     this.sliceList.push(slice);
     return slice;
@@ -414,5 +461,3 @@ class Volume {
     return [min, max];
   }
 }
-
-export { Volume };

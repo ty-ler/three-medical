@@ -2,11 +2,17 @@ import {
   ClampToEdgeWrapping,
   DoubleSide,
   LinearFilter,
+  Matrix3,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   PlaneGeometry,
   Texture,
 } from 'three';
+import { Volume } from './volume';
+
+export type VolumeSliceAxis = 'x' | 'y' | 'z';
+export type VolumeSliceAccess = (i: number, j: number) => number;
 
 /**
  * This class has been made to hold a slice of a volume data
@@ -17,8 +23,23 @@ import {
  * @see Volume
  */
 class VolumeSlice {
-  constructor(volume, index, axis) {
-    const slice = this;
+  public volume: Volume;
+  public geometryNeedsUpdate: boolean = false;
+  public axis: VolumeSliceAxis;
+  public ctx: CanvasRenderingContext2D | null = null;
+  public canvas: HTMLCanvasElement;
+  public ctxBuffer: CanvasRenderingContext2D | null = null;
+  public canvasBuffer: HTMLCanvasElement;
+  public geometry: any;
+  public mesh: Mesh;
+  public iLength: number = 0;
+  public jLength: number = 0;
+  public sliceAccess?: VolumeSliceAccess;
+  public colorMap: number[] = [];
+  public index: number = -1;
+  public matrix: Matrix4 = new Matrix4();
+
+  constructor(volume: Volume, index: number, axis: VolumeSliceAxis) {
     /**
      * @member {Volume} volume The associated volume
      */
@@ -28,12 +49,12 @@ class VolumeSlice {
      */
     index = index || 0;
     Object.defineProperty(this, 'index', {
-      get: function () {
+      get: () => {
         return index;
       },
-      set: function (value) {
+      set: (value) => {
         index = value;
-        slice.geometryNeedsUpdate = true;
+        this.geometryNeedsUpdate = true;
         return index;
       },
     });
@@ -111,16 +132,28 @@ class VolumeSlice {
       ctx = this.ctxBuffer;
 
     // get the imageData and pixel array from the canvas
-    const imgData = ctx.getImageData(0, 0, iLength, jLength);
-    const data = imgData.data;
+    const imgData = ctx?.getImageData(0, 0, iLength, jLength);
+    const data = imgData?.data;
     const volumeData = volume.data;
-    const upperThreshold = volume.upperThreshold;
-    const lowerThreshold = volume.lowerThreshold;
-    const windowLow = volume.windowLow;
-    const windowHigh = volume.windowHigh;
+    const upperThreshold = volume?.upperThreshold;
+    const lowerThreshold = volume?.lowerThreshold;
+    const windowLow = volume?.windowLow;
+    const windowHigh = volume?.windowHigh;
 
     // manipulate some pixel elements
     let pixelCount = 0;
+
+    if (
+      !this.ctx ||
+      !ctx ||
+      !sliceAccess ||
+      !data ||
+      upperThreshold == null ||
+      lowerThreshold == null ||
+      windowLow == null ||
+      windowHigh == null
+    )
+      return;
 
     if (volume.dataType === 'label') {
       //this part is currently useless but will be used when colortables will be handled
@@ -175,7 +208,7 @@ class VolumeSlice {
       this.canvas.height
     );
 
-    this.mesh.material.map.needsUpdate = true;
+    (this.mesh.material as any).map.needsUpdate = true;
   }
 
   /**
@@ -191,8 +224,8 @@ class VolumeSlice {
     this.sliceAccess = extracted.sliceAccess;
     this.jLength = extracted.jLength;
     this.iLength = extracted.iLength;
-    this.matrix = extracted.matrix;
 
+    this.matrix = extracted.matrix;
     this.canvas.width = extracted.planeWidth;
     this.canvas.height = extracted.planeHeight;
     this.canvasBuffer.width = this.iLength;
