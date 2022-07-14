@@ -27,3 +27,14 @@ export enum Orientation {
   SAGITTAL = 'SAGITTAL',
   CORONAL = 'CORONAL',
 }
+
+export const getOrientationIndex = (orientation: Orientation) => {
+  switch (orientation) {
+    case Orientation.AXIAL:
+      return 2;
+    case Orientation.SAGITTAL:
+      return 0;
+    case Orientation.CORONAL:
+      return 1;
+  }
+};

@@ -75,43 +75,37 @@ export class DicomLoader {
   }
 
   private prepareVolume(image: ITKImage) {
-    const volume = new Volume(
-      image.size[0],
-      image.size[1],
-      image.size[2],
-      'int32',
-      image.data
-    ) as any;
+    const volume = new Volume(image);
 
-    volume.spacing = [...image.spacing];
+    // volume.spacing = [...image.spacing];
 
-    const minMax = volume.computeMinMax();
+    // const minMax = volume.computeMinMax();
 
-    volume.windowLow = minMax[0];
-    volume.windowHigh = minMax[1];
+    // volume.windowLow = minMax[0];
+    // volume.windowHigh = minMax[1];
 
-    volume.matrix = new Matrix4();
-    volume.matrix.set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-    volume.inverseMatrix = new Matrix4();
-    volume.inverseMatrix.copy(volume.matrix).invert();
+    // volume.matrix = new Matrix4();
+    // volume.matrix.set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+    // volume.inverseMatrix = new Matrix4();
+    // volume.inverseMatrix.copy(volume.matrix).invert();
 
-    volume.RASDimensions = new Vector3(
-      volume.xLength,
-      volume.yLength,
-      volume.zLength
-    )
-      .applyMatrix4(volume.matrix)
-      .round()
-      .toArray()
-      .map(Math.abs);
+    // volume.RASDimensions = new Vector3(
+    //   volume.xLength,
+    //   volume.yLength,
+    //   volume.zLength
+    // )
+    //   .applyMatrix4(volume.matrix)
+    //   .round()
+    //   .toArray()
+    //   .map(Math.abs);
 
-    if (volume.lowerThreshold === -Infinity) {
-      volume.lowerThreshold = minMax[0];
-    }
+    // if (volume.lowerThreshold === -Infinity) {
+    //   volume.lowerThreshold = minMax[0];
+    // }
 
-    if (volume.upperThreshold === Infinity) {
-      volume.upperThreshold = minMax[1];
-    }
+    // if (volume.upperThreshold === Infinity) {
+    //   volume.upperThreshold = minMax[1];
+    // }
 
     return volume as Volume;
   }

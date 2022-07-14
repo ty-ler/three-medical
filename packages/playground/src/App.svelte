@@ -2,10 +2,14 @@
   import { onDestroy, onMount } from 'svelte';
   import { fetchDicomUrls } from './helpers/fetch-dicom';
   import {
+    ControlMethod,
     MPROrthographicCamera,
+    MPRVolumeSliceControls,
     Orientation,
     RenderLoop,
     setRendererContainerElement,
+    Volume,
+    VolumeSlice,
   } from '@three-medical/core';
   import DicomLoader from '@three-medical/dicom-loader';
   import {
@@ -20,48 +24,41 @@
     BoxHelper,
     Color,
   } from 'three';
-  import type { VolumeSlice } from 'packages/dicom-loader/src/lib/common/volume-slice';
-  import type { Volume } from 'packages/dicom-loader/src/lib/common/volume';
   import { inflate } from 'pako';
 
-  let container: HTMLDivElement;
+  let containerAxial: HTMLDivElement;
+  let containerSagittal: HTMLDivElement;
+  let containerCoronal: HTMLDivElement;
+
+  let renderLoopAxial: RenderLoop;
+  let renderLoopSagittal: RenderLoop;
+  let renderLoopCoronal: RenderLoop;
+
   // let viewport: Viewport;
-  let renderer: WebGLRenderer = new WebGLRenderer({
-    antialias: true,
-  });
-  let renderLoop: RenderLoop;
 
-  let volume: Volume;
-  let sliceX: VolumeSlice;
-  let sliceY: VolumeSlice;
-  let sliceZ: VolumeSlice;
-
-  const setupRenderer = () => {
+  const setupRenderer = (renderer: WebGLRenderer) => {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x333333);
   };
 
-  const handleChangeSliceSlider = (e: Event, slice: VolumeSlice) => {
-    const inputElement = e.target as HTMLInputElement;
-    (slice as any).index = inputElement.value;
+  const setupScene = (
+    containerElement: HTMLDivElement,
+    volume: Volume,
+    orientation: Orientation
+  ) => {
+    if (!containerElement) return;
 
-    slice.repaint();
-  };
-
-  onMount(async () => {
-    setupRenderer();
-
-    const urls = await fetchDicomUrls(
-      'http://localhost:1337/prostate/compressed'
-    );
-
-    const loader = new DicomLoader();
-    volume = await loader.loadImageSeries(urls, (buffer) => {
-      const uint8 = new Uint8Array(buffer);
-      const decompressed = inflate(uint8);
-
-      return decompressed.buffer;
+    const renderer: WebGLRenderer = new WebGLRenderer({
+      antialias: true,
     });
+
+    const size = volume.getOrientationSize(orientation);
+    const intialIndex = Math.floor(
+      orientation === Orientation.AXIAL ? size / 4 : size / 2
+    );
+    const slice: VolumeSlice = volume.extractSlice(orientation, intialIndex);
+
+    setupRenderer(renderer);
 
     // const camera = new PerspectiveCamera(
     //   60,
@@ -71,55 +68,22 @@
     // );
     // camera.position.z = 1000;
 
-    const camera = new MPROrthographicCamera(Orientation.AXIAL);
-    camera.updateValuesForContainerElement(container);
+    const camera = new MPROrthographicCamera(orientation);
+    camera.updateValuesForContainerElement(containerElement);
 
     const scene = new Scene();
 
-    // // light
-    // const hemiLight = new HemisphereLight(0xffffff, 0x000000, 1);
-    // scene.add(hemiLight);
+    scene.add(slice.mesh);
 
-    // const dirLight = new DirectionalLight(0xffffff, 0.5);
-    // dirLight.position.set(200, 200, 200);
-    // scene.add(dirLight);
-
-    //box helper to see the extend of the volume
-    const geometry = new BoxGeometry(
-      volume.xLength * volume.spacing[0],
-      volume.yLength * volume.spacing[1],
-      volume.zLength * volume.spacing[2]
+    camera.fitToMesh(
+      slice.mesh,
+      containerElement.clientWidth,
+      containerElement.clientHeight,
+      25
     );
-    const material = new MeshBasicMaterial({ color: 0x00ff00 });
-    const cube = new Mesh(geometry, material);
-    cube.visible = false;
-    const box = new BoxHelper(cube);
-    scene.add(box);
-    box.applyMatrix4((volume as any).matrix);
-    scene.add(cube);
 
-    //z plane
-    sliceZ = volume.extractSlice(
-      'z',
-      Math.floor((volume as any).RASDimensions[2] / 4)
-    );
-    scene.add(sliceZ.mesh);
+    setRendererContainerElement(renderer, containerElement);
 
-    //y plane
-    sliceY = volume.extractSlice(
-      'y',
-      Math.floor((volume as any).RASDimensions[1] / 2)
-    );
-    scene.add(sliceY.mesh);
-
-    //x plane
-    sliceX = volume.extractSlice(
-      'x',
-      Math.floor((volume as any).RASDimensions[0] / 2)
-    );
-    scene.add(sliceX.mesh);
-
-    // const renderer = viewport.getRenderer();
     // const controls = new TrackballControls(camera, renderer.domElement);
     // controls.minDistance = 100;
     // controls.maxDistance = 5000;
@@ -128,9 +92,16 @@
     // controls.panSpeed = 2;
     // controls.noRotate = true;
 
-    setRendererContainerElement(renderer, container);
+    const controls = new MPRVolumeSliceControls(camera, renderer, slice)
+      .withSlicing({
+        methods: [ControlMethod.Primary],
+      })
+      .withZoom({
+        methods: [ControlMethod.Secondary, ControlMethod.Wheel],
+      });
 
-    renderLoop = new RenderLoop({
+    controls;
+    const renderLoop = new RenderLoop({
       renderer,
       scene,
       camera,
@@ -145,46 +116,98 @@
     });
 
     renderLoop.start();
+  };
+
+  const handleChangeSliceSlider = (e: Event, slice: VolumeSlice) => {
+    const inputElement = e.target as HTMLInputElement;
+    slice.setIndex(Number(inputElement.value));
+
+    slice.repaint();
+  };
+
+  onMount(async () => {
+    const urls = await fetchDicomUrls(
+      'http://localhost:1337/prostate/compressed'
+    );
+
+    const loader = new DicomLoader();
+    const volume = await loader.loadImageSeries(urls, (buffer) => {
+      const uint8 = new Uint8Array(buffer);
+      const decompressed = inflate(uint8);
+
+      return decompressed.buffer;
+
+      return buffer;
+    });
+
+    setupScene(containerAxial, volume, Orientation.AXIAL);
+    setupScene(containerSagittal, volume, Orientation.SAGITTAL);
+    setupScene(containerCoronal, volume, Orientation.CORONAL);
+
+    //box helper to see the extend of the volume
+    // const [sizeX, sizeY, sizeZ] = volume.getSize();
+    // const [spacingX, spacingY, spacingZ] = volume.getSpacing();
+
+    // const geometry = new BoxGeometry(
+    //   sizeX * spacingX,
+    //   sizeY * spacingY,
+    //   sizeZ * spacingZ
+    // );
+    // const material = new MeshBasicMaterial({ color: 0x00ff00 });
+    // const cube = new Mesh(geometry, material);
+    // cube.visible = false;
+    // const box = new BoxHelper(cube);
+    // scene.add(box);
+    // box.applyMatrix4(volume.getMatrix());
+    // scene.add(cube);
   });
 
   onDestroy(() => {
-    // viewport.cancelRenderLoop();
-    renderLoop.stop();
+    renderLoopAxial?.stop();
+    renderLoopSagittal?.stop();
+    renderLoopCoronal?.stop();
   });
 </script>
 
-<div style="display: flex; gap: 1rem;">
-  <div
-    bind:this={container}
-    style="width: 800px; height: 800px; background: teal;"
-  />
+<div style="display: flex; flex-wrap: wrap; gap: .5rem;">
+  <div bind:this={containerAxial} class="scene" />
 
-  {#if volume}
+  <div bind:this={containerSagittal} class="scene" />
+
+  <div bind:this={containerCoronal} class="scene" />
+
+  <!-- {#if volume}
     <div>
       <label>Axial</label>
       <input
         type="range"
         min={0}
-        max={volume?.zLength - 1}
+        max={sliceZ.getMaxIndex()}
         on:input={(e) => handleChangeSliceSlider(e, sliceZ)}
       />
       <label>Sagittal</label>
       <input
         type="range"
         min={0}
-        max={volume?.xLength - 1}
+        max={sliceX.getMaxIndex()}
         on:input={(e) => handleChangeSliceSlider(e, sliceX)}
       />
       <label>Coronal</label>
       <input
         type="range"
         min={0}
-        max={volume?.yLength - 1}
+        max={sliceY.getMaxIndex()}
         on:input={(e) => handleChangeSliceSlider(e, sliceY)}
       />
     </div>
-  {/if}
+  {/if} -->
 </div>
 
 <style>
+  .scene {
+    min-width: 800px;
+    min-height: 800px;
+    background: teal;
+    cursor: pointer;
+  }
 </style>
